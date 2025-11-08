@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -41,3 +42,27 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Expo Prebuild
+/.expo-shared
+
+# CocoaPods (if ios folder is tracked)
+ios/Pods/
+ios/Podfile.lock
+
+# Xcode
+ios/**/*.xcworkspace/xcuserdata/
+ios/**/*.xcodeproj/xcuserdata/
+ios/**/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/.xcode.env.local
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Build artifacts
+ios/build/
+android/app/build/
+android/.gradle/
+
+# Package manager locks (if using yarn, you might want to keep yarn.lock)
+# package-lock.json

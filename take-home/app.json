@@ -29,6 +29,7 @@
     },
     "plugins": [
       "expo-router",
+      "@kingstinct/react-native-healthkit",
       [
         "expo-splash-screen",
         {
@@ -40,7 +41,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "react-native-health"
     ],
     "experiments": {
       "typedRoutes": true,
