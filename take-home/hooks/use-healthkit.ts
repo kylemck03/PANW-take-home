@@ -51,16 +51,33 @@ export const useHealthKit = () => {
 
       // Request permissions for all the health data types we need
       await HealthKit.requestAuthorization(
-        [], // write permissions
         [
+          // Write permissions for user-input data
+          'HKQuantityTypeIdentifierBodyMass',              // Weight
+          'HKQuantityTypeIdentifierHeight',                // Height
+          'HKQuantityTypeIdentifierDietaryEnergyConsumed', // Dietary Energy
+          'HKQuantityTypeIdentifierDietarySugar',          // Dietary Sugar
+          'HKQuantityTypeIdentifierDietaryWater',          // Water
+          'HKCategoryTypeIdentifierSleepAnalysis',         // Sleep
+        ],
+        [
+          // Read permissions
           'HKQuantityTypeIdentifierStepCount',
           'HKQuantityTypeIdentifierHeartRate',
           'HKQuantityTypeIdentifierRestingHeartRate',
           'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
           'HKQuantityTypeIdentifierActiveEnergyBurned',
           'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+          'HKQuantityTypeIdentifierDietarySugar',
+          'HKQuantityTypeIdentifierDietaryWater',
+          'HKQuantityTypeIdentifierBodyMass',              // Weight
+          'HKQuantityTypeIdentifierHeight',                // Height
+          'HKQuantityTypeIdentifierVO2Max',                // Cardio Fitness
+          'HKQuantityTypeIdentifierWalkingSpeed',          // Walking Speed
+          'HKQuantityTypeIdentifierAppleExerciseTime',     // Exercise Minutes
+          'HKQuantityTypeIdentifierDistanceCycling',       // Activity distances
+          'HKQuantityTypeIdentifierDistanceWalkingRunning',
           'HKCategoryTypeIdentifierSleepAnalysis',
-          'HKCategoryTypeIdentifierMindfulSession',
         ]
       );
 

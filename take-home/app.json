@@ -10,7 +10,18 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tykobaby808.takehome"
+      "bundleIdentifier": "com.tykobaby808.takehome",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "This app needs access to your health data to display your fitness metrics and activity information.",
+        "NSHealthUpdateUsageDescription": "This app needs permission to update your health data.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.236806978237-g1igdpl7op86vaa681l9bo4f0trddd37"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +40,13 @@
     },
     "plugins": [
       "expo-router",
-      "@kingstinct/react-native-healthkit",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "This app needs access to your health data to display your fitness metrics and activity information.",
+          "NSHealthUpdateUsageDescription": "This app needs permission to update your health data."
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -42,7 +59,10 @@
           }
         }
       ],
-      "react-native-health"
+      "react-native-health",
+      [
+        "@react-native-google-signin/google-signin"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
