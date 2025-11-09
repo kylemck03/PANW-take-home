@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import LoadingScreen from './screens/LoadingScreen';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -32,12 +33,20 @@ function RootLayoutNav() {
 
   const colorScheme = useColorScheme();
 
+  // Show loading screen while checking auth state
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="screens/LoadingScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="screens/LoginScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="screens/HomeScreen" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
