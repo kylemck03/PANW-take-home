@@ -6,10 +6,6 @@ A modern React Native health tracking application built with Expo Router, featur
 
 ## Features
 
-### Character-Driven UI
-- **Beanie Character** - An animated ghost companion (Rive animation) that appears throughout the app
-- **AI-Powered Insights** - Real-time personalized health tips from GPT-5-mini
-
 ### Health Dashboard
 Real-time health metrics from Apple HealthKit:
 - **Steps** - Daily step count 
@@ -53,12 +49,6 @@ Real-time health metrics from Apple HealthKit:
 - **Refresh Anytime** - Generate new predictions on demand
 - **Embedded Mode** - Can be displayed within other screens
 
-### User Experience
-- **Loading Screen** - Animated Beanie character during app initialization
-- **Login Screen** - Welcoming interface with character greeting
-- **Home Dashboard** - Comprehensive health overview with quick stats
-- **Quick Actions** - Easy access to common features
-- **Tab Navigation** - Easy switching between Home, Insights, Analytics, and Story
 
 ## Quick Start
 
@@ -77,6 +67,19 @@ open takehome.xcworkspace
 pod install
 cd ..
 
+# Create env var
+
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
+# Google Sign-In Configuration
+# iOS Client ID from your plist file
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
+
+# Web Client ID - you need this for Supabase auth
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
+
+
 # Run on physical iOS device or simulator
 npx expo run:ios
 ```
@@ -88,15 +91,27 @@ Once opened you will create a new group called "Assets" in the root directory an
 <img width="1076" height="788" alt="image" src="https://github.com/user-attachments/assets/d64c7bcc-30ff-4b18-8ab4-237e101eca03" />
 <img width="1076" height="788" alt="image" src="https://github.com/user-attachments/assets/d5758436-5d17-4c7d-8d3c-01144af2ab8b" />
 
-**1. Start Backend:**
+### Environment Variables
+Create a `.env` file in the `backend` directory with:
+```
+SUPABASE_URL=
+SUPABASE_SERVICE_KEY=
+OPENAI_API_KEY=
+ENVIRONMENT=development
+```
+** Start Backend:**
 ```bash
 cd backend
 source venv/bin/activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
+** Test:**
+- Open the app
+- Login with Google
+- Watch the "Tip from Beanie" card load real insights
 
-## Project Structure
+## Project Structure(Frontend)
 
 ```
 take-home/
@@ -155,53 +170,6 @@ Following Expo Router best practices, the app separates routing from UI logic:
 
 This pattern makes the codebase more maintainable and testable.
 
-### Key Components
-
-#### LoadingScreen
-- Displays animated Beanie character during app initialization
-- Shown while checking authentication state
-- Uses Rive animation (`beanie_loading.riv`)
-
-#### LoginScreen
-- Welcome screen with Beanie character greeting
-- Google Sign-In integration
-- Guest mode option
-- Smooth entrance animations
-- Responsive design
-
-#### HomeScreen
-- Personalized greeting with time-of-day awareness
-- Beanie character companion
-- Quick stats (streak, progress, achievements)
-- Daily tips from Beanie
-- Health metrics dashboard
-- Quick action cards
-- Profile header with user info
-
-#### HealthDashboard
-- Real-time HealthKit data integration
-- Scrollable metric cards
-- Progress indicators
-- Loading states
-- Automatic data refresh
-- Proper formatting (commas, decimals)
-- Handles missing data gracefully
-
-#### CorrelatedDashboard (Story Tab)
-- Interactive metric correlation visualization
-- AI-generated narrative explanations
-- Multi-metric correlation analysis
-- Historical trend viewing
-- Smart health story insights
-
-#### PredictionDashboard
-- Tomorrow's health forecast
-- AI-powered predictions based on historical data
-- Trend and pattern-based insights
-- Refreshable predictions
-- Embedded mode support
-
-
 ## Implementation Highlights
 
 ### Custom Hook (`use-healthkit.ts`)
@@ -212,19 +180,6 @@ This pattern makes the codebase more maintainable and testable.
 - Type-safe with TypeScript
 - Handles iOS-specific requirements
 
-### Authentication (`auth-context.tsx`)
-- Supabase integration
-- Google Sign-In support
-- Session management
-- Automatic navigation based on auth state
-
-### UI Components
-- Themed components for light/dark mode support
-- Safe area handling for modern iOS devices
-- Responsive design
-- Smooth animations
-- Loading states
-- Error handling
 
 ### Configuration
 - Privacy descriptions in Info.plist
@@ -282,19 +237,6 @@ cd backend
 source venv/bin/activate
 python -m uvicorn app.main:app --reload
 ```
-### Environment Variables
-Create a `.env` file in the `take-home` directory with:
-```
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
-OPENAI_API_KEY=
-ENVIRONMENT=development
-```
-
-**4. Test:**
-- Open the app
-- Login with Google or Guest mode
-- Watch the "Tip from Beanie" card load real insights
 
 ### API Endpoints
 
