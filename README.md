@@ -62,9 +62,11 @@ cd take-home
 yarn install
 
 # Open Xcode to add HealthKit capability
+npx expo prebuild
 cd ios
 open takehome.xcworkspace
 # In Xcode: Add HealthKit capability in Signing & Capabilities tab
+# Need to create Assets folder and drag rive animation to it as well
 
 # Install iOS dependencies
 pod install
@@ -82,9 +84,6 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
 # Web Client ID - you need this for Supabase auth
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
 
-
-# Run on physical iOS device or simulator
-npx expo run:ios
 ```
 **You need this file ``takehome.xcodeproj`` to open in Xcode so it is best to use the finder file explorer for this as seen below:**
 Once opened you will create a new group called "Assets" in the root directory and then drag the ``beanie_loading.riv`` file into it and check the target box
@@ -93,6 +92,13 @@ Once opened you will create a new group called "Assets" in the root directory an
 <img width="1076" height="788" alt="image" src="https://github.com/user-attachments/assets/cf05ef2e-0fe0-4674-9aaa-347e88e8fb47" />
 <img width="1076" height="788" alt="image" src="https://github.com/user-attachments/assets/d64c7bcc-30ff-4b18-8ab4-237e101eca03" />
 <img width="1076" height="788" alt="image" src="https://github.com/user-attachments/assets/d5758436-5d17-4c7d-8d3c-01144af2ab8b" />
+
+## Run simulator
+
+```bash
+# Run on physical iOS device or simulator
+npx expo run:ios
+```
 
 ### Environment Variables
 Create a `.env` file in the `backend` directory with:
@@ -105,6 +111,7 @@ ENVIRONMENT=development
 ** Start Backend:**
 ```bash
 cd backend
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
