@@ -96,7 +96,7 @@ export const PredictionDashboard = forwardRef<PredictionDashboardRef, Prediction
   const parsePrediction = (text: string): { title: string; content: string }[] => {
     const sections: { title: string; content: string }[] = [];
     
-    // Try to find sections by common patterns
+    // Try to find sections by common patterns (Hard coded approach for now)
     const whatToExpectMatch = text.match(/(?:What to Expect|What to expect)[:\s]+(.*?)(?=(?:Actionable|What to Watch|$))/is);
     const actionableMatch = text.match(/(?:Actionable Preparation|Actionable|Preparation)[:\s]+(.*?)(?=(?:What to Watch|$))/is);
     const watchForMatch = text.match(/(?:What to Watch For|What to Watch|Watch For)[:\s]+(.*?)$/is);

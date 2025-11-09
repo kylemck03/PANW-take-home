@@ -80,7 +80,7 @@ class MLAnalysisService:
             Dictionary with all analysis results
         """
         start_time = time.time()
-        logger.info(f"Starting full ML analysis for user {user_id} ({days} days)")
+        logger.info(f"Starting full ML analysis ({days} days)")
         
         try:
             # 1. Fetch data
@@ -252,7 +252,7 @@ class MLAnalysisService:
         days: int = 90
     ) -> Dict:
         """Run only correlation analysis."""
-        logger.info(f"Running correlation analysis for user {user_id}")
+        logger.info("Running correlation analysis")
         
         try:
             df = await supabase_service.get_health_data(user_id, days=days)
@@ -280,7 +280,7 @@ class MLAnalysisService:
         days: int = 90
     ) -> Dict:
         """Run only anomaly detection."""
-        logger.info(f"Running anomaly detection for user {user_id}")
+        logger.info("Running anomaly detection")
         
         try:
             df = await supabase_service.get_health_data(user_id, days=days)
@@ -337,7 +337,7 @@ class MLAnalysisService:
         days: int = 90
     ) -> Dict:
         """Run only trend analysis."""
-        logger.info(f"Running trend analysis for user {user_id}")
+        logger.info("Running trend analysis")
         
         try:
             df = await supabase_service.get_health_data(user_id, days=days)

@@ -52,7 +52,6 @@ class OpenAIService:
         # Responses API uses output_text directly
         output_text = getattr(response, "output_text", None)
         logger.debug(f"Response type: {type(response)}, has output_text: {hasattr(response, 'output_text')}")
-        logger.debug(f"output_text value: {output_text}")
         
         if isinstance(output_text, str) and output_text.strip():
             return output_text.strip()

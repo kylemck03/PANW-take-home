@@ -401,12 +401,12 @@ export const useHealthKit = () => {
         }
       }
 
-      console.log('✅ Successfully synced health data to Supabase for', today);
+      console.log('Successfully synced health data to Supabase');
       return true;
     } catch (err: any) {
       const errorMessage = err?.message || `Failed to sync health data: ${err}`;
       setSyncError(errorMessage);
-      console.error('❌ Error syncing health data:', err);
+      console.error('Error syncing health data:', err);
       return false;
     } finally {
       setIsSyncing(false);
