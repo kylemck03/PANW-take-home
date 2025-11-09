@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 // @ts-ignore - HealthKit types may not be available until after pod install
 import HealthKit from '@kingstinct/react-native-healthkit';
+import { api, type HealthDataSync } from '@/lib/api';
 
 export interface HealthData {
   sleepAnalysis: {
@@ -33,6 +34,8 @@ export const useHealthKit = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const requestAuthorization = async () => {
     if (Platform.OS !== 'ios') {
@@ -90,14 +93,25 @@ export const useHealthKit = () => {
     }
   };
 
-  const fetchHealthData = async () => {
-    if (Platform.OS !== 'ios') return;
+  const fetchHealthData = async (): Promise<HealthData | null> => {
+    if (Platform.OS !== 'ios') return null;
 
     try {
       setIsLoading(true);
       const now = new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      
+      // Create a fresh data object to return
+      const freshData: HealthData = {
+        sleepAnalysis: null,
+        heartRate: null,
+        heartRateVariability: null,
+        stepCount: null,
+        activeEnergyBurned: null,
+        dietaryEnergyConsumed: null,
+        mindfulMinutes: null,
+      };
 
       // Fetch Sleep Analysis (last night)
       const yesterdayStart = new Date(startOfDay);
@@ -129,13 +143,15 @@ export const useHealthKit = () => {
             }
           });
 
+          const sleepData = {
+            asleepHours: totalAsleepMinutes / 60,
+            inBedHours: totalInBedMinutes / 60,
+            date: new Date(sleepSamples[0].startDate),
+          };
+          freshData.sleepAnalysis = sleepData;
           setHealthData((prev) => ({
             ...prev,
-            sleepAnalysis: {
-              asleepHours: totalAsleepMinutes / 60,
-              inBedHours: totalInBedMinutes / 60,
-              date: new Date(sleepSamples[0].startDate),
-            },
+            sleepAnalysis: sleepData,
           }));
         }
       } catch (err) {
@@ -169,12 +185,14 @@ export const useHealthKit = () => {
         );
 
         if (heartRateSamples.length > 0 || restingHeartRateSamples.length > 0) {
+          const heartRateData = {
+            current: heartRateSamples[0]?.quantity || 0,
+            resting: restingHeartRateSamples[0]?.quantity || 0,
+          };
+          freshData.heartRate = heartRateData;
           setHealthData((prev) => ({
             ...prev,
-            heartRate: {
-              current: heartRateSamples[0]?.quantity || 0,
-              resting: restingHeartRateSamples[0]?.quantity || 0,
-            },
+            heartRate: heartRateData,
           }));
         }
       } catch (err) {
@@ -196,6 +214,7 @@ export const useHealthKit = () => {
         );
 
         if (hrvSamples.length > 0) {
+          freshData.heartRateVariability = hrvSamples[0].quantity;
           setHealthData((prev) => ({
             ...prev,
             heartRateVariability: hrvSamples[0].quantity,
@@ -218,6 +237,7 @@ export const useHealthKit = () => {
         );
 
         const totalSteps = stepSamples.reduce((sum: number, sample: any) => sum + sample.quantity, 0);
+        freshData.stepCount = totalSteps;
         setHealthData((prev) => ({
           ...prev,
           stepCount: totalSteps,
@@ -239,6 +259,7 @@ export const useHealthKit = () => {
         );
 
         const totalEnergy = energySamples.reduce((sum: number, sample: any) => sum + sample.quantity, 0);
+        freshData.activeEnergyBurned = totalEnergy;
         setHealthData((prev) => ({
           ...prev,
           activeEnergyBurned: totalEnergy,
@@ -260,6 +281,7 @@ export const useHealthKit = () => {
         );
 
         const totalDietary = dietarySamples.reduce((sum: number, sample: any) => sum + sample.quantity, 0);
+        freshData.dietaryEnergyConsumed = totalDietary;
         setHealthData((prev) => ({
           ...prev,
           dietaryEnergyConsumed: totalDietary,
@@ -268,35 +290,126 @@ export const useHealthKit = () => {
         console.log('Dietary energy data not available:', err);
       }
 
-      // Fetch Mindful Sessions (today's total minutes)
-      try {
-        const mindfulSamples = await HealthKit.queryCategorySamples(
-          'HKCategoryTypeIdentifierMindfulSession',
-          {
-            filter: {
-              startDate: startOfDay,
-              endDate: endOfDay,
-            },
-          }
-        );
-
-        const totalMinutes = mindfulSamples.reduce((sum: number, sample: any) => {
-          const duration = (new Date(sample.endDate).getTime() - new Date(sample.startDate).getTime()) / 1000 / 60;
-          return sum + duration;
-        }, 0);
-
-        setHealthData((prev) => ({
-          ...prev,
-          mindfulMinutes: totalMinutes,
-        }));
-      } catch (err) {
-        console.log('Mindful session data not available:', err);
-      }
 
       setIsLoading(false);
+      return freshData;
     } catch (err) {
       setError(`Failed to fetch health data: ${err}`);
       setIsLoading(false);
+      return null;
+    }
+  };
+
+  /**
+   * Convert HealthKit data to API format for syncing to Supabase
+   */
+  const convertToApiFormat = (data: HealthData, date: string): HealthDataSync => {
+    const metrics: Record<string, any> = {};
+
+    // Map HealthKit data to API metrics format
+    if (data.sleepAnalysis?.asleepHours !== null && data.sleepAnalysis?.asleepHours !== undefined) {
+      metrics.sleep_hours = data.sleepAnalysis.asleepHours;
+    }
+
+    if (data.stepCount !== null && data.stepCount !== undefined) {
+      metrics.step_count = Math.round(data.stepCount);
+    }
+
+    if (data.heartRate?.resting !== null && data.heartRate?.resting !== undefined) {
+      metrics.resting_heart_rate = Math.round(data.heartRate.resting);
+    }
+
+    if (data.heartRate?.current !== null && data.heartRate?.current !== undefined) {
+      metrics.heart_rate_avg = Math.round(data.heartRate.current);
+    }
+
+    if (data.heartRateVariability !== null && data.heartRateVariability !== undefined) {
+      metrics.hrv_sdnn = data.heartRateVariability;
+    }
+
+    if (data.activeEnergyBurned !== null && data.activeEnergyBurned !== undefined) {
+      metrics.active_energy_burned = Math.round(data.activeEnergyBurned);
+    }
+
+    if (data.dietaryEnergyConsumed !== null && data.dietaryEnergyConsumed !== undefined) {
+      metrics.dietary_energy_consumed = Math.round(data.dietaryEnergyConsumed);
+    }
+
+    if (data.mindfulMinutes !== null && data.mindfulMinutes !== undefined) {
+      metrics.exercise_time_minutes = Math.round(data.mindfulMinutes);
+    }
+
+    return {
+      date,
+      metrics,
+      source: 'healthkit',
+    };
+  };
+
+  /**
+   * Sync today's health data to Supabase
+   * @param userId - User ID from Supabase auth
+   * @param date - Optional date string (YYYY-MM-DD). Defaults to today
+   */
+  const syncToSupabase = async (userId: string, date?: string): Promise<boolean> => {
+    if (Platform.OS !== 'ios') {
+      setSyncError('HealthKit is only available on iOS');
+      return false;
+    }
+
+    if (!isAuthorized) {
+      setSyncError('HealthKit not authorized');
+      return false;
+    }
+
+    try {
+      setIsSyncing(true);
+      setSyncError(null);
+
+      // Always refetch to get the latest data before syncing
+      const freshData = await fetchHealthData();
+      if (!freshData) {
+        setSyncError('Failed to fetch health data');
+        return false;
+      }
+
+      // Get today's date in YYYY-MM-DD format
+      const today = date || new Date().toISOString().split('T')[0];
+
+      // Convert to API format using fresh data
+      const syncData = convertToApiFormat(freshData, today);
+
+      // Sync to backend (which persists to Supabase)
+      await api.healthData.sync(userId, syncData);
+
+      // If we have sleep data, also sync it with the correct date (yesterday, since sleep is from last night)
+      if (freshData.sleepAnalysis?.asleepHours && freshData.sleepAnalysis?.date) {
+        const sleepDate = new Date(freshData.sleepAnalysis.date);
+        const sleepDateStr = sleepDate.toISOString().split('T')[0];
+        
+        // Only sync sleep separately if it's a different date than today
+        if (sleepDateStr !== today) {
+          const sleepSyncData: HealthDataSync = {
+            date: sleepDateStr,
+            metrics: {
+              sleep_hours: freshData.sleepAnalysis.asleepHours,
+            },
+            source: 'healthkit',
+          };
+          await api.healthData.sync(userId, sleepSyncData);
+          console.log('✅ Also synced sleep data for', sleepDateStr);
+        }
+      }
+
+      console.log('✅ Successfully synced health data to Supabase for', today);
+      return true;
+    } catch (err: any) {
+      const errorMessage = err?.message || `Failed to sync health data: ${err}`;
+      setSyncError(errorMessage);
+      console.error('❌ Error syncing health data:', err);
+      return false;
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -316,7 +429,10 @@ export const useHealthKit = () => {
     isLoading,
     error,
     isAuthorized,
+    isSyncing,
+    syncError,
     refetch: fetchHealthData,
     requestAuthorization,
+    syncToSupabase,
   };
 };

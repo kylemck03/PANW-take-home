@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView, Dimensions, Platform, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from './themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useHealthKit } from '@/hooks/use-healthkit';
+import { useAuth } from '@/contexts/auth-context';
 import { Ionicons } from '@expo/vector-icons';
 // @ts-ignore - HealthKit types may not be available until after pod install
 import HealthKit from '@kingstinct/react-native-healthkit';
@@ -34,11 +36,13 @@ const formatDecimal = (num: number | null | undefined, decimals: number = 1): st
 };
 
 export function HealthDashboard() {
-  const { healthData, isLoading } = useHealthKit();
+  const { user } = useAuth();
+  const { healthData, isLoading, syncToSupabase, isSyncing, syncError } = useHealthKit();
   const [waterCups, setWaterCups] = useState<number | null>(null);
   const [weight, setWeight] = useState<number | null>(null);
   const [loadingWater, setLoadingWater] = useState(false);
   const [loadingWeight, setLoadingWeight] = useState(false);
+  const [hasSyncedToday, setHasSyncedToday] = useState(false);
   const cardBackground = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
 
   // Fetch water data
@@ -107,6 +111,59 @@ export function HealthDashboard() {
     fetchWeight();
   }, []);
 
+  // Sync health data to Supabase when data is loaded and user is available
+  useEffect(() => {
+    const syncData = async () => {
+      // Only sync if:
+      // 1. User is logged in
+      // 2. Health data has been loaded (not loading)
+      // 3. We have some data to sync
+      // 4. We haven't already synced today
+      if (
+        user?.id &&
+        !isLoading &&
+        !isSyncing &&
+        !hasSyncedToday &&
+        (healthData.stepCount !== null || healthData.activeEnergyBurned !== null || healthData.sleepAnalysis !== null)
+      ) {
+        try {
+          const success = await syncToSupabase(user.id);
+          if (success) {
+            setHasSyncedToday(true);
+            console.log('✅ Health data synced to Supabase');
+          } else if (syncError) {
+            console.warn('⚠️ Failed to sync health data:', syncError);
+          }
+        } catch (error) {
+          console.error('Error syncing health data:', error);
+        }
+      }
+    };
+
+    syncData();
+  }, [user?.id, isLoading, isSyncing, healthData, hasSyncedToday, syncToSupabase, syncError]);
+
+  // Reset sync flag at the start of a new day
+  useEffect(() => {
+    const checkNewDay = async () => {
+      try {
+        const today = new Date().toDateString();
+        const lastSyncDate = await AsyncStorage.getItem('lastHealthSyncDate');
+        if (lastSyncDate !== today) {
+          setHasSyncedToday(false);
+          await AsyncStorage.setItem('lastHealthSyncDate', today);
+        }
+      } catch (error) {
+        console.error('Error checking sync date:', error);
+      }
+    };
+
+    checkNewDay();
+    // Check every minute to catch day changes
+    const interval = setInterval(checkNewDay, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Calculate metrics from HealthKit data
   const steps = healthData.stepCount;
   const stepsGoal = 10000;
@@ -148,12 +205,13 @@ export function HealthDashboard() {
       isLoading: isLoading,
     },
     {
-      id: 'calories',
-      title: 'Calories',
-      value: caloriesValue,
-      unit: caloriesUnit,
-      icon: 'flame-outline',
-      color: '#FFA500',
+      id: 'sleep',
+      title: 'Sleep',
+      value: sleepValue,
+      unit: sleepUnit,
+      icon: 'moon-outline',
+      color: '#9B59B6',
+      progress: sleepProgress,
       isLoading: isLoading,
     },
     {
@@ -165,16 +223,6 @@ export function HealthDashboard() {
       color: '#4FC3F7',
       progress: waterProgress,
       isLoading: loadingWater,
-    },
-    {
-      id: 'sleep',
-      title: 'Sleep',
-      value: sleepValue,
-      unit: sleepUnit,
-      icon: 'moon-outline',
-      color: '#9B59B6',
-      progress: sleepProgress,
-      isLoading: isLoading,
     },
     {
       id: 'heart',

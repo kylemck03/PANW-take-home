@@ -4,12 +4,30 @@ Analytics API endpoints - for running ML analyses.
 
 from fastapi import APIRouter, HTTPException, status, Query
 from app.services.ml_service import ml_service
-from typing import Optional
+from typing import Optional, Any
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def sanitize_float_values(data: Any) -> Any:
+    """
+    Recursively sanitize float values in a data structure.
+    Replaces NaN, Infinity, and -Infinity with None for JSON compatibility.
+    """
+    if isinstance(data, dict):
+        return {key: sanitize_float_values(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_float_values(item) for item in data]
+    elif isinstance(data, float):
+        if math.isnan(data) or math.isinf(data):
+            return None
+        return data
+    else:
+        return data
 
 
 @router.post("/{user_id}/analyze")
@@ -46,7 +64,8 @@ async def run_full_analysis(
                 detail=results["error"]
             )
         
-        return results
+        # Sanitize float values before returning
+        return sanitize_float_values(results)
         
     except HTTPException:
         raise
@@ -84,7 +103,8 @@ async def get_correlations(
                 detail=results["error"]
             )
         
-        return results
+        # Sanitize float values before returning
+        return sanitize_float_values(results)
         
     except HTTPException:
         raise
@@ -122,7 +142,8 @@ async def get_anomalies(
                 detail=results["error"]
             )
         
-        return results
+        # Sanitize float values before returning
+        return sanitize_float_values(results)
         
     except HTTPException:
         raise
@@ -244,7 +265,8 @@ async def get_trends(
                 detail=results["error"]
             )
         
-        return results
+        # Sanitize float values before returning
+        return sanitize_float_values(results)
         
     except HTTPException:
         raise
@@ -282,7 +304,8 @@ async def get_health_summary(
                 detail=results["error"]
             )
         
-        return results
+        # Sanitize float values before returning
+        return sanitize_float_values(results)
         
     except HTTPException:
         raise
@@ -319,7 +342,8 @@ async def get_user_baselines(user_id: str):
                 detail="Baselines not yet calculated. Run a full analysis first."
             )
         
-        return baselines
+        # Sanitize float values before returning
+        return sanitize_float_values(baselines)
         
     except HTTPException:
         raise

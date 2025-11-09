@@ -361,6 +361,60 @@ export const api = {
 
       return response.json();
     },
+
+    /**
+     * Get correlated narrative explaining metric relationships
+     */
+    getCorrelatedNarrative: async (
+      userId: string,
+      healthData: any[],
+      correlations: Correlation[],
+      days: number = 14,
+      userName?: string
+    ) => {
+      const response = await fetch(
+        `${API_BASE_URL}/api/insights/${userId}/correlated-narrative`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            health_data: healthData,
+            correlations: correlations,
+            days: days,
+            user_name: userName,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to generate correlated narrative');
+      }
+
+      return response.json();
+    },
+
+    /**
+     * Get tomorrow prediction
+     */
+    getTomorrowPrediction: async (userId: string, userName?: string) => {
+      const params = new URLSearchParams({
+        ...(userName && { user_name: userName }),
+      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/insights/${userId}/tomorrow?${params}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to fetch tomorrow prediction');
+      }
+
+      return response.json();
+    },
   },
 
   /**

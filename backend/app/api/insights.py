@@ -2,11 +2,11 @@
 Insights API endpoints - for AI-generated health insights.
 """
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, status, Query, Body
 from app.services.openai_service import openai_service
 from app.services.ml_service import ml_service
 from app.services.supabase_service import supabase_service
-from typing import Optional
+from typing import Optional, List, Dict
 from datetime import date
 import logging
 
@@ -398,5 +398,60 @@ async def mark_insight_as_read(user_id: str, insight_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error updating insight: {str(e)}"
+        )
+
+
+@router.post("/{user_id}/correlated-narrative")
+async def get_correlated_narrative(
+    user_id: str,
+    request_data: Dict = Body(...)
+):
+    """
+    Generate a cohesive narrative explaining how health metrics relate to each other.
+    
+    Creates a story showing how sleep, activity, nutrition, and other metrics
+    influence each other (e.g., poor sleep → workout performance → food choices).
+    
+    Args:
+        user_id: User UUID
+        health_data: List of health data records
+        correlations: List of detected correlations
+        days: Number of days analyzed
+        user_name: Optional user name for personalization
+    
+    Returns:
+        AI-generated narrative explaining metric relationships
+    """
+    try:
+        logger.info(f"Generating correlated narrative for user {user_id}")
+        
+        # Extract data from request body
+        health_data = request_data.get('health_data', [])
+        correlations = request_data.get('correlations', [])
+        days = request_data.get('days', 14)
+        user_name = request_data.get('user_name')
+        
+        # Generate narrative using OpenAI service
+        narrative = await openai_service.generate_correlated_narrative(
+            health_data=health_data,
+            correlations=correlations,
+            days=days,
+            user_name=user_name or "there"
+        )
+        
+        return {
+            "user_id": user_id,
+            "narrative": narrative,
+            "days_analyzed": days,
+            "correlations_count": len(correlations)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating correlated narrative: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating correlated narrative: {str(e)}"
         )
 

@@ -155,7 +155,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Alternative options placeholder */}
-          <View style={styles.alternativeContainer}>
+          {/* <View style={styles.alternativeContainer}>
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: textColor, opacity: 0.2 }]} />
               <ThemedText style={styles.dividerText}>or</ThemedText>
@@ -167,11 +167,11 @@ export default function LoginScreen() {
                 Continue as Guest
               </ThemedText>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        {/* <View style={styles.footer}>
           <ThemedText style={styles.footerText}>
             By continuing, you agree to our{' '}
             <ThemedText style={[styles.footerLink, { color: tintColor }]}>
@@ -182,7 +182,7 @@ export default function LoginScreen() {
               Privacy Policy
             </ThemedText>
           </ThemedText>
-        </View>
+        </View> */}
       </Animated.View>
     </ThemedView>
   );
@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 16,
+    paddingBottom: 90,
   },
   button: {
     flexDirection: 'row',

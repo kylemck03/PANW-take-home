@@ -5,13 +5,30 @@ Health Data API endpoints - for syncing and retrieving health data.
 from fastapi import APIRouter, HTTPException, status
 from app.models.schemas import HealthDataSync, HealthDataResponse
 from app.services.supabase_service import supabase_service
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 from datetime import datetime, date
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def sanitize_float_values(data: Any) -> Any:
+    """
+    Replaces NaN, Infinity, and -Infinity with None for JSON compatibility.
+    """
+    if isinstance(data, dict):
+        return {key: sanitize_float_values(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_float_values(item) for item in data]
+    elif isinstance(data, float):
+        if math.isnan(data) or math.isinf(data):
+            return None
+        return data
+    else:
+        return data
 
 
 @router.post("/{user_id}/sync", status_code=status.HTTP_201_CREATED)
@@ -145,10 +162,13 @@ async def get_health_data(
         # Convert DataFrame to list of dicts
         records = df.to_dict('records')
         
-        # Convert dates to strings
+        # Convert dates to strings and sanitize float values
         for record in records:
             if 'date' in record:
                 record['date'] = str(record['date'].date())
+        
+        # Sanitize all float values (replace NaN, Infinity, -Infinity with None)
+        records = sanitize_float_values(records)
         
         return {
             "user_id": user_id,
