@@ -1,5 +1,8 @@
 # PANW Take-Home: Health Tracking App
 
+## Live Demo: 
+https://www.youtube.com/watch?v=DcZcoXKSiLA
+
 ## Overview
 
 A modern React Native health tracking application built with Expo Router, featuring Apple HealthKit integration, Google authentication, and a delightful character-driven UI. The app uses Beanie, an animated character companion, to create an engaging and friendly user experience.

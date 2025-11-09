@@ -47,7 +47,7 @@ class SupabaseService:
             if not end_date:
                 end_date = datetime.now().date()
             
-            logger.info(f"Fetching health data for user {user_id} from {start_date} to {end_date}")
+            logger.info(f"Fetching health data for user")
             
             response = self.client.table("health_data") \
                 .select("*") \
@@ -58,7 +58,7 @@ class SupabaseService:
                 .execute()
             
             if not response.data:
-                logger.warning(f"No health data found for user {user_id}")
+                logger.warning("No health data found for user")
                 return pd.DataFrame()
             
             df = pd.DataFrame(response.data)
@@ -113,13 +113,13 @@ class SupabaseService:
                     .eq("user_id", user_id) \
                     .eq("date", data_date) \
                     .execute()
-                logger.info(f"Updated health data for user {user_id}, date {data_date}")
+                logger.info("Updated health data for user")
             else:
                 # Insert new record
                 response = self.client.table("health_data") \
                     .insert(data) \
                     .execute()
-                logger.info(f"Inserted health data for user {user_id}, date {data_date}")
+                logger.info("Inserted health data for user")
             
             return response.data[0] if response.data else None
             
@@ -175,7 +175,7 @@ class SupabaseService:
                 if response.data:
                     results.extend(response.data)
             
-            logger.info(f"Batch upserted {len(results)} health records for user {user_id}")
+            logger.info(f"Batch upserted {len(results)} health records")
             return results
             
         except Exception as e:
@@ -192,7 +192,7 @@ class SupabaseService:
             }
             
             response = self.client.table("anomalies").insert(data).execute()
-            logger.info(f"Stored anomaly for user {user_id}, date {anomaly_data.get('date')}")
+            logger.info("Stored anomaly for user")
             
             return response.data[0] if response.data else None
             
@@ -333,7 +333,7 @@ class SupabaseService:
                 .limit(limit) \
                 .execute()
             
-            logger.info(f"Retrieved {len(response.data)} insights for user {user_id}")
+            logger.info(f"Retrieved {len(response.data)} insights")
             return response.data
             
         except Exception as e:
@@ -365,10 +365,10 @@ class SupabaseService:
                 .execute()
             
             if response.data:
-                logger.info(f"Retrieved baselines for user {user_id}")
+                logger.info("Retrieved baselines for user")
                 return response.data[0]
             
-            logger.warning(f"No baselines found for user {user_id}")
+            logger.warning("No baselines found for user")
             return None
             
         except Exception as e:
@@ -386,7 +386,7 @@ class SupabaseService:
             }
             
             response = self.client.table("user_baselines").insert(data).execute()
-            logger.info(f"Stored baselines for user {user_id}")
+            logger.info("Stored baselines for user")
             
             return response.data[0] if response.data else None
             

@@ -30,7 +30,7 @@ async def get_daily_insights(user_id: str, user_name: Optional[str] = None):
         AI-generated daily insights
     """
     try:
-        logger.info(f"Generating daily insights for user {user_id}")
+        logger.info("Generating daily insights")
         
         # Get recent health summary (last 7 days for context)
         health_summary = await ml_service.get_health_summary(user_id, days=7)
@@ -91,7 +91,7 @@ async def get_weekly_digest(user_id: str, user_name: Optional[str] = None):
         AI-generated weekly digest
     """
     try:
-        logger.info(f"Generating weekly digest for user {user_id}")
+        logger.info("Generating weekly digest")
         
         # Get weekly summary
         health_summary = await ml_service.get_health_summary(user_id, days=7)
@@ -224,7 +224,7 @@ async def get_actionable_decisions(user_id: str, user_name: Optional[str] = None
         AI-generated decision-focused insights
     """
     try:
-        logger.info(f"Generating actionable decisions for user {user_id}")
+        logger.info("Generating actionable decisions")
         
         # Get recent health summary
         health_summary = await ml_service.get_health_summary(user_id, days=7)
@@ -300,7 +300,7 @@ async def get_tomorrow_prediction(user_id: str, user_name: Optional[str] = None)
         AI-generated prediction for tomorrow with actionable insights
     """
     try:
-        logger.info(f"Generating tomorrow prediction for user {user_id}")
+        logger.info("Generating tomorrow prediction")
         
         # Get recent health summary (last 7 days)
         health_summary = await ml_service.get_health_summary(user_id, days=7)
@@ -423,7 +423,7 @@ async def get_correlated_narrative(
         AI-generated narrative explaining metric relationships
     """
     try:
-        logger.info(f"Generating correlated narrative for user {user_id}")
+        logger.info("Generating correlated narrative")
         
         # Extract data from request body
         health_data = request_data.get('health_data', [])

@@ -54,7 +54,7 @@ async def run_full_analysis(
         Complete analysis results
     """
     try:
-        logger.info(f"Starting full analysis for user {user_id} ({days} days)")
+        logger.info(f"Starting full analysis ({days} days)")
         
         results = await ml_service.run_full_analysis(user_id, days=days)
         

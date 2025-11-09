@@ -47,7 +47,7 @@ async def sync_health_data(user_id: str, data: HealthDataSync):
         Created/updated health data record
     """
     try:
-        logger.info(f"Syncing health data for user {user_id}, date {data.date}")
+        logger.info("Syncing health data for user")
         
         # metrics is already a dict
         result = await supabase_service.upsert_health_data(
@@ -94,7 +94,7 @@ async def batch_sync_health_data(user_id: str, records: List[HealthDataSync]):
         Summary of synced records
     """
     try:
-        logger.info(f"Batch syncing {len(records)} records for user {user_id}")
+        logger.info(f"Batch syncing {len(records)} records")
         
         # Convert records to format expected by service
         formatted_records = []
@@ -143,7 +143,7 @@ async def get_health_data(
         List of health data records
     """
     try:
-        logger.info(f"Fetching health data for user {user_id}")
+        logger.info("Fetching health data for user")
         
         df = await supabase_service.get_health_data(
             user_id=user_id,
@@ -198,7 +198,7 @@ async def delete_health_data(user_id: str, data_date: date):
         data_date: Date to delete
     """
     try:
-        logger.info(f"Deleting health data for user {user_id}, date {data_date}")
+        logger.info("Deleting health data for user")
         
         # Note: You'll need to implement this in supabase_service if needed
         raise HTTPException(
