@@ -50,8 +50,17 @@ def analyze_correlations(
             # Get correlation coefficient
             r_value = corr_matrix.loc[metric_a, metric_b]
             
-            # Calculate p-value
-            _, p_value = stats.pearsonr(df[metric_a].dropna(), df[metric_b].dropna())
+            # Calculate p-value - drop rows where EITHER column has NaN to ensure same length
+            subset = df[[metric_a, metric_b]].dropna()
+            if len(subset) < 2:
+                # Need at least 2 data points for correlation
+                continue
+            
+            try:
+                _, p_value = stats.pearsonr(subset[metric_a], subset[metric_b])
+            except ValueError as e:
+                logger.warning(f"Error calculating correlation for {metric_a} vs {metric_b}: {e}")
+                continue
             
             # Check if significant
             if abs(r_value) >= significance_threshold and p_value < p_value_threshold:

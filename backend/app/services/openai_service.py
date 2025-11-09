@@ -12,15 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIService:
-    """Service for GPT insight generation."""
-    
+
     def __init__(self):
         self._client = None
-        self.model = "gpt-5-nano"
+        self.model = "gpt-5-mini"
     
     @property
     def client(self):
-        """Lazy initialization of OpenAI client."""
         if self._client is None:
             # Set API key in environment if not already set
             if settings.openai_api_key:
@@ -479,21 +477,29 @@ Be encouraging and make it personal."""
         try:
             # Build recent metrics context
             metrics_text = []
-            if health_summary.get('sleep_hours_avg'):
-                latest_sleep = health_summary.get('sleep_hours_latest', health_summary.get('sleep_hours_avg'))
-                metrics_text.append(f"- Sleep: {latest_sleep:.1f}h (avg: {health_summary['sleep_hours_avg']:.1f}h)")
+            sleep_avg = health_summary.get('sleep_hours_avg')
+            if sleep_avg is not None:
+                latest_sleep = health_summary.get('sleep_hours_latest', sleep_avg)
+                if latest_sleep is not None:
+                    metrics_text.append(f"- Sleep: {latest_sleep:.1f}h (avg: {sleep_avg:.1f}h)")
             
-            if health_summary.get('step_count_avg'):
-                latest_steps = health_summary.get('step_count_latest', health_summary.get('step_count_avg'))
-                metrics_text.append(f"- Steps: {latest_steps:,.0f} (avg: {health_summary['step_count_avg']:,.0f})")
+            step_avg = health_summary.get('step_count_avg')
+            if step_avg is not None:
+                latest_steps = health_summary.get('step_count_latest', step_avg)
+                if latest_steps is not None:
+                    metrics_text.append(f"- Steps: {latest_steps:,.0f} (avg: {step_avg:,.0f})")
             
-            if health_summary.get('resting_heart_rate_avg'):
-                latest_hr = health_summary.get('resting_heart_rate_latest', health_summary.get('resting_heart_rate_avg'))
-                metrics_text.append(f"- Resting HR: {latest_hr:.0f}bpm (avg: {health_summary['resting_heart_rate_avg']:.0f}bpm)")
+            hr_avg = health_summary.get('resting_heart_rate_avg')
+            if hr_avg is not None:
+                latest_hr = health_summary.get('resting_heart_rate_latest', hr_avg)
+                if latest_hr is not None:
+                    metrics_text.append(f"- Resting HR: {latest_hr:.0f}bpm (avg: {hr_avg:.0f}bpm)")
             
-            if health_summary.get('active_energy_burned_avg'):
-                latest_cal = health_summary.get('active_energy_burned_latest', health_summary.get('active_energy_burned_avg'))
-                metrics_text.append(f"- Active Calories: {latest_cal:.0f}kcal (avg: {health_summary['active_energy_burned_avg']:.0f}kcal)")
+            cal_avg = health_summary.get('active_energy_burned_avg')
+            if cal_avg is not None:
+                latest_cal = health_summary.get('active_energy_burned_latest', cal_avg)
+                if latest_cal is not None:
+                    metrics_text.append(f"- Active Calories: {latest_cal:.0f}kcal (avg: {cal_avg:.0f}kcal)")
             
             # Build trends context
             trends_text = []
@@ -528,7 +534,7 @@ BEHAVIORAL PATTERNS DISCOVERED:
 KEY RELATIONSHIPS:
 {chr(10).join(correlations_text) if correlations_text else "  No strong correlations detected"}
 
-Based on this data, generate a personalized prediction for tomorrow (2-3 paragraphs):
+Based on this data, generate a personalized prediction for tomorrow (1-2 sentences):
 
 1. **What to Expect**: Based on recent trends and patterns, what should they anticipate for tomorrow? Consider:
    - If trends are continuing, what metrics might follow the pattern?
@@ -562,132 +568,304 @@ Be encouraging, specific, and data-driven. Use the patterns and trends to make r
             logger.error(f"Error generating tomorrow prediction: {e}")
             raise
     
-    async def generate_actionable_decisions(
+#     async def generate_actionable_decisions(
+#         self,
+#         health_summary: Dict,
+#         trends: List[Dict],
+#         patterns: Dict,
+#         correlations: List[Dict],
+#         anomalies: List[Dict],
+#         user_name: str = "there"
+#     ) -> str:
+#         """
+#         Generate specific, decision-focused insights that help users make informed health decisions.
+        
+#         Focuses on actionable recommendations with clear decision points and expected outcomes.
+        
+#         Args:
+#             health_summary: Recent health metrics (last 7-30 days)
+#             trends: Trend analysis showing direction of changes
+#             patterns: Detected behavioral patterns
+#             correlations: Significant correlations between metrics
+#             anomalies: Detected anomalies
+#             user_name: User's name for personalization
+        
+#         Returns:
+#             AI-generated decision-focused insights
+#         """
+#         try:
+#             # Build current health status
+#             status_text = []
+#             if health_summary.get('sleep_hours_avg'):
+#                 latest = health_summary.get('sleep_hours_latest', health_summary.get('sleep_hours_avg'))
+#                 avg = health_summary.get('sleep_hours_avg', 0)
+#                 status_text.append(f"- Sleep: {latest:.1f}h last night (avg: {avg:.1f}h)")
+            
+#             if health_summary.get('step_count_avg'):
+#                 latest = health_summary.get('step_count_latest', health_summary.get('step_count_avg'))
+#                 avg = health_summary.get('step_count_avg', 0)
+#                 status_text.append(f"- Steps: {latest:,.0f} yesterday (avg: {avg:,.0f})")
+            
+#             if health_summary.get('resting_heart_rate_avg'):
+#                 latest = health_summary.get('resting_heart_rate_latest', health_summary.get('resting_heart_rate_avg'))
+#                 avg = health_summary.get('resting_heart_rate_avg', 0)
+#                 status_text.append(f"- Resting HR: {latest:.0f}bpm (avg: {avg:.0f}bpm)")
+            
+#             # Build decision-relevant trends
+#             trends_text = []
+#             for trend in trends[:5]:
+#                 direction_emoji = "📈" if trend['trend_direction'] == "Increasing" else "📉" if trend['trend_direction'] == "Decreasing" else "➡️"
+#                 change = trend.get('percent_change', 0)
+#                 metric_name = trend['metric'].replace('_', ' ').title()
+#                 trends_text.append(f"  {direction_emoji} {metric_name}: {trend['trend_direction']} by {abs(change):.1f}%")
+            
+#             # Build patterns that inform decisions
+#             patterns_text = []
+#             if patterns.get('sleep_sugar', {}).get('pattern_detected'):
+#                 ss = patterns['sleep_sugar']
+#                 patterns_text.append(f"  • Sleep-Sugar Pattern: Sleeping < {ss.get('sleep_threshold', 6):.1f}h leads to {abs(ss.get('percent_change', 0)):.0f}% change in next-day sugar intake")
+            
+#             # Build correlations that inform decisions
+#             correlations_text = []
+#             for corr in correlations[:3]:
+#                 if corr.get('strength') in ['Strong', 'Moderate']:
+#                     correlations_text.append(f"  • {corr['metric_a'].replace('_', ' ').title()} ↔ {corr['metric_b'].replace('_', ' ').title()}: {corr['strength']} {corr['direction']} relationship")
+            
+#             # Build anomaly context for decisions
+#             anomaly_context = []
+#             if anomalies:
+#                 anomaly_metrics = set(a.get('metric', '') for a in anomalies)
+#                 anomaly_context.append(f"  • {len(anomalies)} anomaly/ies detected in: {', '.join(m.replace('_', ' ').title() for m in anomaly_metrics)}")
+            
+#             prompt = f"""You are a health decision coach helping {user_name} make specific, informed decisions about their health based on their data.
+
+# CURRENT HEALTH STATUS:
+# {chr(10).join(status_text) if status_text else "  Limited recent data"}
+
+# TRENDS (What's changing):
+# {chr(10).join(trends_text) if trends_text else "  No significant trends"}
+
+# PATTERNS DISCOVERED (What affects what):
+# {chr(10).join(patterns_text) if patterns_text else "  No specific patterns detected yet"}
+
+# KEY RELATIONSHIPS:
+# {chr(10).join(correlations_text) if correlations_text else "  No strong correlations detected"}
+
+# ANOMALIES TO CONSIDER:
+# {chr(10).join(anomaly_context) if anomaly_context else "  No significant anomalies"}
+
+# Generate specific, decision-focused insights (3-4 paragraphs) that help {user_name} make informed choices:
+
+# 1. **Immediate Decision Points**: Identify 2-3 specific decisions they should make RIGHT NOW based on their current data:
+#    - "Based on your [metric] being [value] vs your average of [avg], you should decide to [specific action]"
+#    - "Given your [trend], you need to decide whether to [option A] or [option B]"
+#    - Be specific: "Aim for 7.5 hours of sleep tonight" not "get more sleep"
+#    - Include the expected outcome: "This should help improve your [related metric] by [expected change]"
+
+# 2. **Strategic Decisions**: Based on patterns and correlations, what longer-term decisions should they consider?
+#    - "Since [pattern] shows that [X] affects [Y], you should decide to prioritize [specific action]"
+#    - "Given the strong correlation between [A] and [B], consider deciding to [specific strategy]"
+#    - Include trade-offs: "If you choose to [option], expect [outcome], but if you choose [alternative], expect [different outcome]"
+
+# 3. **Decision Framework**: Provide a simple decision-making framework:
+#    - "When [condition], decide to [action]"
+#    - "If [metric] is [threshold], then [decision], otherwise [alternative decision]"
+#    - Make it actionable: "Monitor [metric] daily, and if it stays above [value] for 3 days, decide to [action]"
+
+# 4. **What to Decide Next**: Give them a clear next step:
+#    - "Your next decision should be: [specific, measurable action]"
+#    - "By [timeframe], decide whether [option] is working by checking if [metric] has [changed]"
+
+# Be specific, actionable, and decision-oriented. Use actual numbers and metrics from their data. Frame everything as decisions they can make, not just observations. Help them understand the consequences of different choices. Write in a confident, supportive tone that empowers them to take action."""
+
+#             response = await self.client.responses.create(
+#                 model=self.model,
+#                 input=self._build_input(
+#                     "You are a health decision coach who helps users make specific, informed decisions about their health. You provide actionable recommendations with clear decision points and expected outcomes.",
+#                     prompt,
+#                 ),
+#             )
+            
+#             decisions = self._extract_text(response)
+#             if not decisions:
+#                 raise ValueError("OpenAI returned empty decision guidance")
+#             logger.info(f"Generated actionable decisions ({len(decisions)} chars)")
+#             return decisions
+            
+#         except Exception as e:
+#             logger.error(f"Error generating actionable decisions: {e}")
+#             raise
+
+    async def generate_correlated_narrative(
         self,
-        health_summary: Dict,
-        trends: List[Dict],
-        patterns: Dict,
+        health_data: List[Dict],
         correlations: List[Dict],
-        anomalies: List[Dict],
+        days: int = 14,
         user_name: str = "there"
     ) -> str:
         """
-        Generate specific, decision-focused insights that help users make informed health decisions.
+        Generate a cohesive narrative explaining how health metrics relate to each other.
         
-        Focuses on actionable recommendations with clear decision points and expected outcomes.
+        Creates a story showing how sleep, activity, nutrition, and other metrics
+        influence each other (e.g., poor sleep → workout performance → food choices).
         
         Args:
-            health_summary: Recent health metrics (last 7-30 days)
-            trends: Trend analysis showing direction of changes
-            patterns: Detected behavioral patterns
-            correlations: Significant correlations between metrics
-            anomalies: Detected anomalies
+            health_data: List of health data records with dates and metrics
+            correlations: List of detected correlations between metrics
+            days: Number of days analyzed
             user_name: User's name for personalization
         
         Returns:
-            AI-generated decision-focused insights
+            AI-generated narrative text
         """
         try:
-            # Build current health status
-            status_text = []
-            if health_summary.get('sleep_hours_avg'):
-                latest = health_summary.get('sleep_hours_latest', health_summary.get('sleep_hours_avg'))
-                avg = health_summary.get('sleep_hours_avg', 0)
-                status_text.append(f"- Sleep: {latest:.1f}h last night (avg: {avg:.1f}h)")
+            metrics_summary = {}
+            date_metrics = {}
             
-            if health_summary.get('step_count_avg'):
-                latest = health_summary.get('step_count_latest', health_summary.get('step_count_avg'))
-                avg = health_summary.get('step_count_avg', 0)
-                status_text.append(f"- Steps: {latest:,.0f} yesterday (avg: {avg:,.0f})")
+            for record in health_data:
+                date = record.get('date', '')
+                metrics = record.get('metrics', record)
+                
+                # Extract key metrics
+                if 'sleep_hours' in metrics or 'sleep_hours' in record:
+                    sleep_val = metrics.get('sleep_hours') or record.get('sleep_hours')
+                    if sleep_val:
+                        if 'sleep_hours' not in metrics_summary:
+                            metrics_summary['sleep_hours'] = []
+                        metrics_summary['sleep_hours'].append(float(sleep_val))
+                        if date:
+                            if date not in date_metrics:
+                                date_metrics[date] = {}
+                            date_metrics[date]['sleep_hours'] = float(sleep_val)
+                
+                if 'step_count' in metrics or 'step_count' in record:
+                    step_val = metrics.get('step_count') or record.get('step_count')
+                    if step_val:
+                        if 'step_count' not in metrics_summary:
+                            metrics_summary['step_count'] = []
+                        metrics_summary['step_count'].append(float(step_val))
+                        if date:
+                            if date not in date_metrics:
+                                date_metrics[date] = {}
+                            date_metrics[date]['step_count'] = float(step_val)
+                
+                if 'active_energy_burned' in metrics or 'active_energy_burned' in record:
+                    energy_val = metrics.get('active_energy_burned') or record.get('active_energy_burned')
+                    if energy_val:
+                        if 'active_energy_burned' not in metrics_summary:
+                            metrics_summary['active_energy_burned'] = []
+                        metrics_summary['active_energy_burned'].append(float(energy_val))
+                        if date:
+                            if date not in date_metrics:
+                                date_metrics[date] = {}
+                            date_metrics[date]['active_energy_burned'] = float(energy_val)
+                
+                if 'dietary_sugar' in metrics or 'dietary_sugar' in record:
+                    sugar_val = metrics.get('dietary_sugar') or record.get('dietary_sugar')
+                    if sugar_val:
+                        if 'dietary_sugar' not in metrics_summary:
+                            metrics_summary['dietary_sugar'] = []
+                        metrics_summary['dietary_sugar'].append(float(sugar_val))
+                        if date:
+                            if date not in date_metrics:
+                                date_metrics[date] = {}
+                            date_metrics[date]['dietary_sugar'] = float(sugar_val)
             
-            if health_summary.get('resting_heart_rate_avg'):
-                latest = health_summary.get('resting_heart_rate_latest', health_summary.get('resting_heart_rate_avg'))
-                avg = health_summary.get('resting_heart_rate_avg', 0)
-                status_text.append(f"- Resting HR: {latest:.0f}bpm (avg: {avg:.0f}bpm)")
+            # Calculate averages
+            metrics_avg = {}
+            for metric, values in metrics_summary.items():
+                if values:
+                    metrics_avg[metric] = sum(values) / len(values)
             
-            # Build decision-relevant trends
-            trends_text = []
-            for trend in trends[:5]:
-                direction_emoji = "📈" if trend['trend_direction'] == "Increasing" else "📉" if trend['trend_direction'] == "Decreasing" else "➡️"
-                change = trend.get('percent_change', 0)
-                metric_name = trend['metric'].replace('_', ' ').title()
-                trends_text.append(f"  {direction_emoji} {metric_name}: {trend['trend_direction']} by {abs(change):.1f}%")
+            # Build data summary text
+            data_summary = []
+            if 'sleep_hours' in metrics_avg:
+                data_summary.append(f"- Sleep: {metrics_avg['sleep_hours']:.1f} hours average")
+            if 'step_count' in metrics_avg:
+                data_summary.append(f"- Steps: {metrics_avg['step_count']:,.0f} steps average")
+            if 'active_energy_burned' in metrics_avg:
+                data_summary.append(f"- Active Energy: {metrics_avg['active_energy_burned']:.0f} kcal average")
+            if 'dietary_sugar' in metrics_avg:
+                data_summary.append(f"- Dietary Sugar: {metrics_avg['dietary_sugar']:.1f}g average")
             
-            # Build patterns that inform decisions
-            patterns_text = []
-            if patterns.get('sleep_sugar', {}).get('pattern_detected'):
-                ss = patterns['sleep_sugar']
-                patterns_text.append(f"  • Sleep-Sugar Pattern: Sleeping < {ss.get('sleep_threshold', 6):.1f}h leads to {abs(ss.get('percent_change', 0)):.0f}% change in next-day sugar intake")
-            
-            # Build correlations that inform decisions
+            # Build correlations text
             correlations_text = []
-            for corr in correlations[:3]:
-                if corr.get('strength') in ['Strong', 'Moderate']:
-                    correlations_text.append(f"  • {corr['metric_a'].replace('_', ' ').title()} ↔ {corr['metric_b'].replace('_', ' ').title()}: {corr['strength']} {corr['direction']} relationship")
+            for corr in correlations[:5]:  # Top 5 correlations
+                metric_a = corr.get('metric_a', '').replace('_', ' ').title()
+                metric_b = corr.get('metric_b', '').replace('_', ' ').title()
+                corr_val = corr.get('correlation', 0)
+                strength = corr.get('strength', '')
+                direction = corr.get('direction', '')
+                
+                correlations_text.append(
+                    f"- {metric_a} ↔ {metric_b}: {strength} {direction.lower()} correlation ({corr_val:+.2f})"
+                )
             
-            # Build anomaly context for decisions
-            anomaly_context = []
-            if anomalies:
-                anomaly_metrics = set(a.get('metric', '') for a in anomalies)
-                anomaly_context.append(f"  • {len(anomalies)} anomaly/ies detected in: {', '.join(m.replace('_', ' ').title() for m in anomaly_metrics)}")
+            # Find example days showing relationships
+            example_days = []
+            if len(date_metrics) >= 2:
+                # Find a day with low sleep and see what happened with activity/nutrition
+                sorted_dates = sorted(date_metrics.keys())
+                for date in sorted_dates[-7:]:  # Last 7 days
+                    day_data = date_metrics[date]
+                    if 'sleep_hours' in day_data and day_data['sleep_hours'] < 7:
+                        example_day = f"On {date}, you got {day_data['sleep_hours']:.1f}h sleep"
+                        if 'step_count' in day_data:
+                            example_day += f", took {day_data['step_count']:,.0f} steps"
+                        if 'active_energy_burned' in day_data:
+                            example_day += f", burned {day_data['active_energy_burned']:.0f} kcal"
+                        if 'dietary_sugar' in day_data:
+                            example_day += f", consumed {day_data['dietary_sugar']:.1f}g sugar"
+                        example_days.append(example_day)
+                        if len(example_days) >= 2:
+                            break
             
-            prompt = f"""You are a health decision coach helping {user_name} make specific, informed decisions about their health based on their data.
+            prompt = f"""You are a health storyteller helping {user_name} understand how their health metrics connect and influence each other.
 
-CURRENT HEALTH STATUS:
-{chr(10).join(status_text) if status_text else "  Limited recent data"}
+HEALTH DATA SUMMARY (last {days} days):
+{chr(10).join(data_summary) if data_summary else "  Limited data available"}
 
-TRENDS (What's changing):
-{chr(10).join(trends_text) if trends_text else "  No significant trends"}
+KEY RELATIONSHIPS DETECTED:
+{chr(10).join(correlations_text) if correlations_text else "  No strong correlations detected yet"}
 
-PATTERNS DISCOVERED (What affects what):
-{chr(10).join(patterns_text) if patterns_text else "  No specific patterns detected yet"}
+EXAMPLE DAYS:
+{chr(10).join(example_days) if example_days else "  Analyzing patterns..."}
 
-KEY RELATIONSHIPS:
-{chr(10).join(correlations_text) if correlations_text else "  No strong correlations detected"}
+Generate a cohesive, narrative-style explanation ( 2-3 sentences for each section(Big picture, specific relationships, the story, actionable insight)) that tells the story of how {user_name}'s health metrics relate to each other. Focus on:
 
-ANOMALIES TO CONSIDER:
-{chr(10).join(anomaly_context) if anomaly_context else "  No significant anomalies"}
+1. **The Big Picture**: Start with an overview of how sleep, activity, and nutrition form an interconnected system. Explain that these aren't isolated metrics but parts of a holistic health story.
 
-Generate specific, decision-focused insights (3-4 paragraphs) that help {user_name} make informed choices:
+2. **Specific Relationships**: Based on the correlations, explain specific connections. For example:
+   - If sleep correlates with activity: "When you get less sleep, your workout performance tends to [change]. This is because..."
+   - If activity correlates with nutrition: "After more active days, you tend to [nutrition pattern]. This suggests..."
+   - If sleep correlates with nutrition: "Poor sleep nights are often followed by [nutrition choices]. This connection shows..."
 
-1. **Immediate Decision Points**: Identify 2-3 specific decisions they should make RIGHT NOW based on their current data:
-   - "Based on your [metric] being [value] vs your average of [avg], you should decide to [specific action]"
-   - "Given your [trend], you need to decide whether to [option A] or [option B]"
-   - Be specific: "Aim for 7.5 hours of sleep tonight" not "get more sleep"
-   - Include the expected outcome: "This should help improve your [related metric] by [expected change]"
+3. **The Story**: Use the example days to tell a specific story. For instance:
+   - "On [date], you got [X] hours of sleep. The next day, you [activity pattern] and [nutrition pattern]. This illustrates how..."
+   - Make it personal and relatable, showing cause and effect.
 
-2. **Strategic Decisions**: Based on patterns and correlations, what longer-term decisions should they consider?
-   - "Since [pattern] shows that [X] affects [Y], you should decide to prioritize [specific action]"
-   - "Given the strong correlation between [A] and [B], consider deciding to [specific strategy]"
-   - Include trade-offs: "If you choose to [option], expect [outcome], but if you choose [alternative], expect [different outcome]"
+4. **Actionable Insight**: End with what this means for {user_name}:
+   - "Understanding these connections means you can [specific action]. For example, if you notice [pattern], you might want to [action] to improve [outcome]. provide insights that help users make specific,
+informed decisions about their health"
 
-3. **Decision Framework**: Provide a simple decision-making framework:
-   - "When [condition], decide to [action]"
-   - "If [metric] is [threshold], then [decision], otherwise [alternative decision]"
-   - Make it actionable: "Monitor [metric] daily, and if it stays above [value] for 3 days, decide to [action]"
-
-4. **What to Decide Next**: Give them a clear next step:
-   - "Your next decision should be: [specific, measurable action]"
-   - "By [timeframe], decide whether [option] is working by checking if [metric] has [changed]"
-
-Be specific, actionable, and decision-oriented. Use actual numbers and metrics from their data. Frame everything as decisions they can make, not just observations. Help them understand the consequences of different choices. Write in a confident, supportive tone that empowers them to take action."""
+Write in a warm, conversational tone. Use specific numbers from the data. Make it feel like you're telling a story about their health journey, not just listing statistics. Help them see the patterns and understand how one choice affects another."""
 
             response = await self.client.responses.create(
                 model=self.model,
                 input=self._build_input(
-                    "You are a health decision coach who helps users make specific, informed decisions about their health. You provide actionable recommendations with clear decision points and expected outcomes.",
+                    "You are a health storyteller who helps users understand how their health metrics connect and influence each other. You tell cohesive, narrative-style stories that make complex relationships easy to understand.",
                     prompt,
                 ),
             )
             
-            decisions = self._extract_text(response)
-            if not decisions:
-                raise ValueError("OpenAI returned empty decision guidance")
-            logger.info(f"Generated actionable decisions ({len(decisions)} chars)")
-            return decisions
+            narrative = self._extract_text(response)
+            if not narrative:
+                raise ValueError("OpenAI returned empty narrative")
+            logger.info(f"Generated correlated narrative ({len(narrative)} chars)")
+            return narrative
             
         except Exception as e:
-            logger.error(f"Error generating actionable decisions: {e}")
+            logger.error(f"Error generating correlated narrative: {e}")
             raise
 
 

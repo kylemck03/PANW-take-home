@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 class SupabaseService:
-    """Service for all database operations using Supabase."""
     
     def __init__(self):
         """Initialize Supabase client."""
@@ -99,9 +98,29 @@ class SupabaseService:
                 **metrics
             }
             
-            response = self.client.table("health_data").upsert(data).execute()
+            # Check if record exists first
+            existing = self.client.table("health_data") \
+                .select("*") \
+                .eq("user_id", user_id) \
+                .eq("date", data_date) \
+                .execute()
             
-            logger.info(f"Upserted health data for user {user_id}, date {data_date}")
+            if existing.data and len(existing.data) > 0:
+                # Update existing record
+                # Note: updated_at column doesn't exist in schema, so we only update metrics
+                response = self.client.table("health_data") \
+                    .update({**metrics}) \
+                    .eq("user_id", user_id) \
+                    .eq("date", data_date) \
+                    .execute()
+                logger.info(f"Updated health data for user {user_id}, date {data_date}")
+            else:
+                # Insert new record
+                response = self.client.table("health_data") \
+                    .insert(data) \
+                    .execute()
+                logger.info(f"Inserted health data for user {user_id}, date {data_date}")
+            
             return response.data[0] if response.data else None
             
         except Exception as e:
@@ -124,18 +143,40 @@ class SupabaseService:
             List of created/updated records
         """
         try:
-            data = []
+            results = []
             for record in records:
-                data.append({
+                data = {
                     "user_id": user_id,
                     "date": record['date'],
                     **record.get('metrics', {})
-                })
+                }
+                
+                # Check if record exists
+                existing = self.client.table("health_data") \
+                    .select("*") \
+                    .eq("user_id", user_id) \
+                    .eq("date", record['date']) \
+                    .execute()
+                
+                if existing.data and len(existing.data) > 0:
+                    # Update existing
+                    # Note: updated_at column doesn't exist in schema, so we only update metrics
+                    response = self.client.table("health_data") \
+                        .update(record.get('metrics', {})) \
+                        .eq("user_id", user_id) \
+                        .eq("date", record['date']) \
+                        .execute()
+                else:
+                    # Insert new
+                    response = self.client.table("health_data") \
+                        .insert(data) \
+                        .execute()
+                
+                if response.data:
+                    results.extend(response.data)
             
-            response = self.client.table("health_data").upsert(data).execute()
-            
-            logger.info(f"Batch upserted {len(data)} health records for user {user_id}")
-            return response.data
+            logger.info(f"Batch upserted {len(results)} health records for user {user_id}")
+            return results
             
         except Exception as e:
             logger.error(f"Error batch upserting health data: {e}")
